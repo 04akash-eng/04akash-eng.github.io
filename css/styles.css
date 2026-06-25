@@ -200,13 +200,13 @@ body {
 }
 
 /* Reveal transition on scroll */
-.scroll-reveal {
+.section-block {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.scroll-reveal.revealed {
+.section-block.revealed {
     opacity: 1;
     transform: translateY(0);
 }
@@ -662,7 +662,7 @@ section {
 }
 
 /* ==========================================================================
-   PROJECTS SECTION
+   PROJECTS SECTION + EXPANDABLE CARD (Progressive Disclosure)
    ========================================================================== */
 .projects-grid {
     display: grid;
@@ -697,12 +697,6 @@ section {
     justify-content: center;
 }
 
-.project-card:nth-child(2) .project-icon {
-    color: var(--accent-purple);
-    background-color: rgba(157, 78, 221, 0.05);
-    border: 1px solid rgba(157, 78, 221, 0.15);
-}
-
 .project-title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -711,9 +705,91 @@ section {
 .project-description {
     font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     position: relative;
     z-index: 1;
+}
+
+.project-tech-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.tech-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+}
+
+.tech-tag.tag-lang {
+    color: var(--accent-teal);
+    border-color: rgba(79, 251, 223, 0.2);
+}
+
+.tech-tag.tag-mist {
+    color: #e2c06a;
+    border-color: rgba(226, 192, 106, 0.2);
+}
+
+/* Expandable drawer pattern */
+.project-drawer {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 1;
+}
+
+.project-drawer > * {
+    overflow: hidden;
+}
+
+.expandable-card.expanded .project-drawer {
+    grid-template-rows: 1fr;
+}
+
+.project-toggle {
+    position: relative;
+    z-index: 2;
+    margin-top: 0.5rem;
+}
+
+.drawer-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 0.4rem 0;
+    transition: color var(--transition-fast);
+}
+
+.drawer-toggle:hover {
+    color: var(--accent-teal);
+}
+
+.drawer-toggle .toggle-chevron {
+    transition: transform var(--transition-smooth);
+}
+
+.expandable-card.expanded .drawer-toggle .toggle-chevron {
+    transform: rotate(180deg);
+}
+
+.expandable-card.expanded .toggle-text {
+    color: var(--accent-teal);
 }
 
 .project-features {
@@ -740,39 +816,10 @@ section {
     color: var(--text-muted);
 }
 
-.project-tech-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 1.5rem;
-    margin-top: auto; /* Push tech bar to bottom of content card */
-    position: relative;
-    z-index: 1;
-}
-
-.tech-tag {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-primary);
-    color: var(--text-secondary);
-}
-
-.tech-tag.tag-lang {
-    color: var(--accent-teal);
-    border-color: rgba(79, 251, 223, 0.2);
-}
-
-.project-card:nth-child(2) .tech-tag.tag-lang {
-    color: var(--accent-purple);
-    border-color: rgba(157, 78, 221, 0.2);
-}
-
 .project-links {
     position: relative;
     z-index: 1;
+    padding-top: 0.5rem;
 }
 
 .proj-link {

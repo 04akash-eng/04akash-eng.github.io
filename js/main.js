@@ -8,25 +8,26 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavbarSync();
     initMouseGlowCards();
     initTerminalTyping();
+    initExpandableCards();
 });
 
 /* ==========================================================================
    SCROLL REVEAL (IntersectionObserver for smooth entry)
    ========================================================================== */
 function initScrollReveal() {
-    const revealElements = document.querySelectorAll('.scroll-reveal');
+    const revealElements = document.querySelectorAll('.section-block');
     
     const observerOptions = {
-        root: null, // use viewport
-        threshold: 0.1, // trigger when 10% visible
-        rootMargin: '0px 0px -50px 0px' // offset trigger point slightly
+        root: null,
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
     };
     
     const revealObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('revealed');
-                observer.unobserve(entry.target); // trigger once
+                observer.unobserve(entry.target);
             }
         });
     }, observerOptions);
@@ -37,15 +38,15 @@ function initScrollReveal() {
 }
 
 /* ==========================================================================
-   NAVBAR ACTIVE STATE SYNC & TRANSPARENCY
+   NAVBAR ACTIVE STATE SYNC - FIXED using proper scroll-based calculation
+   instead of IntersectionObserver which can miss sections
    ========================================================================== */
 function initNavbarSync() {
     const navbar = document.querySelector('.navbar');
-    const sections = document.querySelectorAll('section');
+    const sections = document.querySelectorAll('.section-block');
     const navLinks = document.querySelectorAll('.nav-link');
     
-    // Add border and background blur intensity when scrolled
-    window.addEventListener('scroll', () => {
+    function updateNavbarOpacity() {
         if (window.scrollY > 20) {
             navbar.style.backgroundColor = 'rgba(10, 12, 16, 0.9)';
             navbar.style.padding = '0.75rem 0';
@@ -53,36 +54,54 @@ function initNavbarSync() {
             navbar.style.backgroundColor = 'rgba(10, 12, 16, 0.75)';
             navbar.style.padding = '1.25rem 0';
         }
-    });
-
-    // Sync active menu link with current section in view
-    const sectionObserverOptions = {
-        root: null,
-        threshold: 0.5, // trigger when 50% in view
-        rootMargin: '-80px 0px 0px 0px' // adjust for header offset
-    };
-
-    const sectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const activeId = entry.target.getAttribute('id');
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === `#${activeId}`) {
-                        link.classList.add('active');
-                    }
-                });
+    }
+    
+    function updateActiveSection() {
+        let currentSectionId = 'hero';
+        let minDistance = Infinity;
+        
+        sections.forEach(section => {
+            const rect = section.getBoundingClientRect();
+            // distance from top of viewport to the section's top
+            const distance = Math.abs(rect.top);
+            // Use a threshold: consider a section "active" if its top is within 200px of the top,
+            // or for sections with negative top (scrolled past), we track the lowest one
+            if (rect.top <= 300 && rect.top >= -section.offsetHeight * 0.5) {
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    currentSectionId = section.getAttribute('id');
+                }
             }
         });
-    }, sectionObserverOptions);
-
-    sections.forEach(section => {
-        sectionObserver.observe(section);
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${currentSectionId}`) {
+                link.classList.add('active');
+            }
+        });
+    }
+    
+    // Throttled scroll handler for performance
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                updateNavbarOpacity();
+                updateActiveSection();
+                ticking = false;
+            });
+            ticking = true;
+        }
     });
+    
+    // Initial call
+    updateNavbarOpacity();
+    updateActiveSection();
 }
 
 /* ==========================================================================
-   APPLE-STYLE MOUSE GRADIENT GLOW (Dynamic border & bg glow tracker)
+   APPLE-STYLE MOUSE GRADIENT GLOW
    ========================================================================== */
 function initMouseGlowCards() {
     const cards = document.querySelectorAll('.glow-card');
@@ -90,13 +109,51 @@ function initMouseGlowCards() {
     cards.forEach(card => {
         card.addEventListener('mousemove', (e) => {
             const rect = card.getBoundingClientRect();
-            // Calculate coordinates relative to the card dimensions
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            
-            // Set css variables
             card.style.setProperty('--mouse-x', `${x}px`);
             card.style.setProperty('--mouse-y', `${y}px`);
+        });
+    });
+}
+
+/* ==========================================================================
+   EXPANDABLE CARDS (Progressive Disclosure for Projects)
+   ========================================================================== */
+function initExpandableCards() {
+    const cards = document.querySelectorAll('.expandable-card');
+    
+    cards.forEach(card => {
+        const toggle = card.querySelector('.drawer-toggle');
+        const drawer = card.querySelector('.project-drawer');
+        
+        if (!toggle || !drawer) return;
+        
+        // Helper to expand or collapse
+        function expand(expanded) {
+            if (expanded) {
+                card.classList.add('expanded');
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.querySelector('.toggle-text').textContent = 'Show Less';
+            } else {
+                card.classList.remove('expanded');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.querySelector('.toggle-text').textContent = 'Read More';
+            }
+        }
+        
+        // Toggle on button click
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isExpanded = card.classList.contains('expanded');
+            expand(!isExpanded);
+        });
+        
+        // Toggle on card click (but not on links inside)
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.proj-link') || e.target.closest('.drawer-toggle')) return;
+            const isExpanded = card.classList.contains('expanded');
+            expand(!isExpanded);
         });
     });
 }
@@ -108,7 +165,7 @@ function initTerminalTyping() {
     const terminalBody = document.getElementById('terminal-body');
     if (!terminalBody) return;
 
-    // Define interactive commands and answers for diagnostic display
+    // Define interactive commands and answers
     const commands = [
         { cmd: 'whoami', output: 'akashdeep_singh // mc_master_computer_engineering_2027' },
         { cmd: 'cat qualcomm_internship.json', output: '{\n  "company": "Qualcomm",\n  "role": "Embedded Software Intern, AI & Infrastructure",\n  "location": "Toronto, ON",\n  "work": "PCIe Gen7 & UCIe validation, telemetry pipelines"\n}' },
@@ -118,9 +175,7 @@ function initTerminalTyping() {
 
     let currentCommandIndex = 0;
 
-    // Inject a command-line prompter at the bottom that responds on click or timer
     function createTerminalPromptLine() {
-        // Clear any old active prompts to avoid cluttering
         const oldPrompt = document.querySelector('.terminal-input-prompt');
         if (oldPrompt) {
             oldPrompt.removeAttribute('id');
@@ -132,8 +187,6 @@ function initTerminalTyping() {
         promptLine.className = 'terminal-line terminal-input-prompt';
         promptLine.innerHTML = `<span class="terminal-prompt">$</span> <span class="typing-target"></span><span class="terminal-cursor"></span>`;
         terminalBody.appendChild(promptLine);
-        
-        // Auto Scroll to bottom of terminal
         terminalBody.scrollTop = terminalBody.scrollHeight;
         
         return promptLine;
@@ -147,10 +200,10 @@ function initTerminalTyping() {
             if (index < commandText.length) {
                 target.textContent += commandText.charAt(index);
                 index++;
-                setTimeout(typeChar, 80 + Math.random() * 40); // natural typing speed
+                setTimeout(typeChar, 80 + Math.random() * 40);
                 terminalBody.scrollTop = terminalBody.scrollHeight;
             } else {
-                setTimeout(callback, 500); // Wait briefly before executing
+                setTimeout(callback, 500);
             }
         }
         
@@ -173,10 +226,8 @@ function initTerminalTyping() {
         terminalBody.scrollTop = terminalBody.scrollHeight;
     }
 
-    // Set up a loop to display commands over time with system-like pauses
     function executeTerminalLoop() {
         if (currentCommandIndex >= commands.length) {
-            // All commands ran. Print a final nice note.
             const closingLine = document.createElement('div');
             closingLine.className = 'terminal-line text-accent';
             closingLine.style.marginTop = '10px';
@@ -189,20 +240,16 @@ function initTerminalTyping() {
         const current = commands[currentCommandIndex];
         const promptLine = createTerminalPromptLine();
         
-        // Wait 1.5s before typing next command
         setTimeout(() => {
             typeCommand(promptLine, current.cmd, () => {
-                // Done typing. Print answer
                 const isJson = current.output.startsWith('{') || current.output.includes('\n');
                 printOutput(current.output, isJson);
                 
-                // Advance and schedule next command
                 currentCommandIndex++;
                 setTimeout(executeTerminalLoop, 1500);
             });
         }, 1200);
     }
 
-    // Start typing loop shortly after page loads to let transitions complete
     setTimeout(executeTerminalLoop, 2500);
 }
